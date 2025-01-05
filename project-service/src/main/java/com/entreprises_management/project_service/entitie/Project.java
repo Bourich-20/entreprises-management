@@ -15,29 +15,35 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    private String nomProjet;
     private Double budget;
-    private String owner;
+    private Double montantPaye;
     private String description;
+    private String type;
 
     @Enumerated(EnumType.STRING)
-    private ProjectStatus status;
+    private ProjectStatus etat; // Enum : Terminé, En Cours, Finalisé, Livré, Annulé
 
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createdAt;
+    private String proprietaire;
+    private Date dateCreation;
+
+    @ElementCollection
+    @CollectionTable(name = "employee_project", joinColumns = @JoinColumn(name = "project_id"))
+    @Column(name = "employee_id")
+    private List<Long> employeeIds;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     private List<Phase> phases;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
-    private List<Task> tasks;
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     private List<Expense> expenses;
 
-    @ElementCollection
-    @CollectionTable(name = "project_employee_ids", joinColumns = @JoinColumn(name = "project_id"))
-    @Column(name = "employee_id")
-    private List<Long> employeeIds;
+    @OneToOne
+    @JoinColumn(name = "invoice_id")
+    private Invoice invoice;
+
+    @OneToOne
+    @JoinColumn(name = "delivery_note_id")
+    private DeliveryNote deliveryNote;
 
 }

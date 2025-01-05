@@ -7,12 +7,18 @@ import java.util.List;
 
 public record ProjectDTO(
         Long id,
-        String name,
+        String nomProjet,
         Double budget,
-        String owner,
+        Double montantPaye,
         String description,
-        ProjectStatus status,
-        Date createdAt,
-        List<Long> employeeIds
+        String type,
+        ProjectStatus etat,
+        String proprietaire,
+        Date dateCreation,
+        List<EmployeeDTO> employees,
+        List<PhaseDTO> phases,
+        List<ExpenseDTO> expenses,
+        InvoiceDTO invoice,
+        DeliveryNoteDTO deliveryNote
 )  implements Serializable {
 }

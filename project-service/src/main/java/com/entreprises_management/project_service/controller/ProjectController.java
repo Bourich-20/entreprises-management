@@ -1,5 +1,6 @@
 package com.entreprises_management.project_service.controller;
 
+import com.entreprises_management.project_service.dtos.EmployeeDTO;
 import com.entreprises_management.project_service.dtos.ProjectCreationDTO;
 import com.entreprises_management.project_service.dtos.ProjectDTO;
 import com.entreprises_management.project_service.service.ProjectService;
@@ -24,8 +25,13 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     public ProjectDTO getProjectById(@PathVariable Long id) {
-        return projectService.getProjectById(id)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+        return projectService.getProjectById(id);
+
+    }
+
+    @GetMapping("/{id}/employees")
+    public List<EmployeeDTO> getEmployeesForProject(@PathVariable Long id) {
+        return projectService.getEmployeesForProject(id);
     }
 
     @GetMapping

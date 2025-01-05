@@ -6,11 +6,17 @@ import java.io.Serializable;
 import java.util.List;
 
 public record ProjectCreationDTO(
-        String name,
+        String nomProjet,
         Double budget,
-        String owner,
+        Double montantPaye,
         String description,
-        ProjectStatus status,
-        List<Long> employeeIds
+        String type,
+        ProjectStatus etat,
+        String proprietaire,
+        List<EmployeeDTO> employees,
+        List<PhaseDTO> phases,
+        List<ExpenseDTO> expenses,
+        InvoiceDTO invoice,
+        DeliveryNoteDTO deliveryNote
 )  implements Serializable {
 }

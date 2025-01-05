@@ -9,6 +9,7 @@ import java.util.Date;
 @Data
 public class PaySlip {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

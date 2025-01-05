@@ -1,11 +1,8 @@
 package com.entreprises.management.division.dtos;
 
-import java.io.Serializable;
-
 import java.util.List;
 
-public record ServiceResponse(
-        Long id,
+public record ServiceRequest(
         String name,
         Long divisionId,
         Long chiefId,

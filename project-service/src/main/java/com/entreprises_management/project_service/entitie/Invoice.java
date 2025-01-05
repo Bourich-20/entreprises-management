@@ -3,23 +3,18 @@ package com.entreprises_management.project_service.entitie;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.util.Date;
 
 @Data
 @Entity
-@Table(name = "tasks")
-public class Task {
+public class Invoice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String description;
-    private Date dateDebut;
-    private Date dateFin;
+    private Double montant;
 
     @ManyToOne
-    @JoinColumn(name = "phase_id")
-    private Phase phase;
-
+    @JoinColumn(name = "project_id")
+    private Project project; // Projet auquel la facture est liée
 }

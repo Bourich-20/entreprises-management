@@ -1,6 +1,7 @@
 package com.entreprises.management.employee_service.service;
 
 
+import com.entreprises.management.employee_service.client.DivisionClient;
 import com.entreprises.management.employee_service.dtos.*;
 import com.entreprises.management.employee_service.entities.*;
 import com.entreprises.management.employee_service.mapper.EmployeeMapper;
@@ -33,6 +34,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private PaySlipRepository paySlipRepository;
+    @Autowired
+    private DivisionClient divisionClient;
 
     @Override
     public EmployeeResponse createEmployee(EmployeeRequest employeeRequest) {
@@ -72,9 +75,13 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
         employeeRepository.deleteById(id);
     }
-
-    @Override
     public List<EmployeeResponse> getEmployeesByDivision(Long divisionId) {
+        DivisionResponse division = divisionClient.getDivisionById(divisionId);
+
+        if (division == null) {
+            throw new RuntimeException("Division not found");
+        }
+
         return employeeRepository.findByDivisionId(divisionId)
                 .stream()
                 .map(employeeMapper::toResponse)
@@ -90,17 +97,27 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
     @Override
     public List<CreditResponse> getEmployeeCredits(Long employeeId) {
-        return creditRepository.findByEmployeeId(employeeId);
+        List<Credit> credits = creditRepository.findByEmployeeId(employeeId);
+
+        return credits.stream().map(credit -> new CreditResponse(
+                credit.getId(),
+                credit.getAmount(),
+                credit.getDescription(),
+                credit.getDate()
+        )).collect(Collectors.toList());
     }
 
     @Override
     public CreditResponse addCredit(Long employeeId, CreditRequest creditRequest) {
-        Employee employee = employeeRepository.findById(employeeId).orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         Credit credit = new Credit();
         credit.setEmployee(employee);
         credit.setAmount(creditRequest.amount());
         credit.setDescription(creditRequest.description());
+
+        employee.getCredits().add(credit);
 
         creditRepository.save(credit);
 
@@ -109,12 +126,15 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public BonusResponse addBonus(Long employeeId, BonusRequest bonusRequest) {
-        Employee employee = employeeRepository.findById(employeeId).orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         Bonus bonus = new Bonus();
         bonus.setEmployee(employee);
         bonus.setBonusAmount(bonusRequest.bonusAmount());
         bonus.setReason(bonusRequest.reason());
+
+        employee.getBonuses().add(bonus);
 
         bonusRepository.save(bonus);
 
@@ -123,31 +143,37 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public SalaryAdvanceResponse requestSalaryAdvance(Long employeeId, SalaryAdvanceRequest salaryAdvanceRequest) {
-        Employee employee = employeeRepository.findById(employeeId).orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         SalaryAdvance salaryAdvance = new SalaryAdvance();
         salaryAdvance.setEmployee(employee);
         salaryAdvance.setAmount(salaryAdvanceRequest.amount());
         salaryAdvance.setReason(salaryAdvanceRequest.reason());
 
+        employee.getSalaryAdvances().add(salaryAdvance);
+
         salaryAdvanceRepository.save(salaryAdvance);
 
         return new SalaryAdvanceResponse(salaryAdvance.getId(), salaryAdvance.getAmount(), salaryAdvance.getReason(), salaryAdvance.getDate());
     }
-
     @Override
     public CnssPaymentResponse processCnssPayment(Long employeeId, CnssPaymentRequest cnssPaymentRequest) {
-        Employee employee = employeeRepository.findById(employeeId).orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         CnssPayment cnssPayment = new CnssPayment();
         cnssPayment.setEmployee(employee);
         cnssPayment.setAmount(cnssPaymentRequest.amount());
         cnssPayment.setPaymentMethod(cnssPaymentRequest.paymentMethod());
 
+        employee.getCnssPayments().add(cnssPayment);
+
         cnssPaymentRepository.save(cnssPayment);
 
         return new CnssPaymentResponse(cnssPayment.getId(), cnssPayment.getAmount(), cnssPayment.getPaymentMethod(), cnssPayment.getPaymentDate());
     }
+
 
     @Override
     public List<CnssPaymentHistoryResponse> getCnssPaymentHistory(Long employeeId) {
@@ -169,7 +195,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public PaySlipResponse createPaySlip(Long employeeId, PaySlipRequest paySlipRequest) {
-        Employee employee = employeeRepository.findById(employeeId).orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         PaySlip paySlip = new PaySlip();
         paySlip.setEmployee(employee);
@@ -177,13 +204,16 @@ public class EmployeeServiceImpl implements EmployeeService {
         paySlip.setBonuses(paySlipRequest.bonuses());
         paySlip.setDeductions(paySlipRequest.deductions());
 
-        double netSalary = paySlipRequest.basicSalary() + paySlipRequest.basicSalary() - paySlipRequest.deductions();
+        double netSalary = paySlipRequest.basicSalary() + paySlipRequest.bonuses() - paySlipRequest.deductions();
         paySlip.setNetSalary(netSalary);
 
         paySlip.setPayDate(new java.util.Date());
+
+        employee.getPaySlips().add(paySlip);
 
         paySlipRepository.save(paySlip);
 
         return new PaySlipResponse(paySlip.getId(), paySlip.getBasicSalary(), paySlip.getBonuses(), paySlip.getDeductions(), paySlip.getNetSalary(), paySlip.getPayDate());
     }
+
 }

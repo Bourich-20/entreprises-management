@@ -14,7 +14,5 @@ public interface DivisionMapper {
 
     DivisionResponse toDivisionResponse(Division division);
 
-    @Mapping(source = "chief.nom", target = "chiefName")
-    @Mapping(source = "chief.id", target = "chiefId")
     ServiceResponse toServiceResponse(Service service);
 }

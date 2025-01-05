@@ -1,8 +1,7 @@
 package com.entreprises_management.project_service.service;
 
-
-
 import com.entreprises_management.project_service.client.EmployeeClient;
+import com.entreprises_management.project_service.dtos.EmployeeDTO;
 import com.entreprises_management.project_service.dtos.ProjectCreationDTO;
 import com.entreprises_management.project_service.dtos.ProjectDTO;
 import com.entreprises_management.project_service.entitie.Project;
@@ -26,87 +25,76 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private EmployeeClient employeeClient;
+
     @Override
     public ProjectDTO createProject(ProjectCreationDTO projectCreationDTO) {
-        List<Long> validEmployeeIds = projectCreationDTO.employeeIds().stream()
-                .map(id -> {
-                    try {
-                        employeeClient.getEmployeeById(id);
-                        return id;
-                    } catch (Exception e) {
-                        return null;
-                    }
-                })
-                .filter(id -> id != null)
-                .collect(Collectors.toList());
-
-        List<Long> invalidEmployeeIds = projectCreationDTO.employeeIds().stream()
-                .filter(id -> !validEmployeeIds.contains(id))
-                .toList();
-
-        if (!invalidEmployeeIds.isEmpty()) {
-            throw new RuntimeException("Les employés suivants n'ont pas été trouvés : " + invalidEmployeeIds);
-        }
-
-        Project project = projectMapper.toEntity(projectCreationDTO);
-        project.setEmployeeIds(validEmployeeIds);
-
-        Project savedProject = projectRepository.save(project);
-
-        return projectMapper.toDTO(savedProject);
+        Project project = projectMapper.projectCreationDTOToProject(projectCreationDTO);
+        project = projectRepository.save(project);
+        return projectMapper.projectToProjectDTO(project);
     }
+
     @Override
-    public Optional<ProjectDTO> getProjectById(Long id) {
-        return projectRepository.findById(id)
-                .map(projectMapper::toDTO);
+    public ProjectDTO getProjectById(Long id) {
+        Optional<Project> project = projectRepository.findById(id);
+        return project.map(projectMapper::projectToProjectDTO)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
     }
 
     @Override
     public List<ProjectDTO> getAllProjects() {
-        return projectMapper.toDTOList(projectRepository.findAll());
+        List<Project> projects = projectRepository.findAll();
+        return projects.stream()
+                .map(project -> {
+                    List<EmployeeDTO> employees = getEmployeesForProject(project.getId());
+                    ProjectDTO projectDTO = projectMapper.projectToProjectDTO(project);
+                    return new ProjectDTO(
+                            projectDTO.id(),
+                            projectDTO.nomProjet(),
+                            projectDTO.budget(),
+                            projectDTO.montantPaye(),
+                            projectDTO.description(),
+                            projectDTO.type(),
+                            projectDTO.etat(),
+                            projectDTO.proprietaire(),
+                            projectDTO.dateCreation(),
+                            employees,
+                            projectDTO.phases(),
+                            projectDTO.expenses(),
+                            projectDTO.invoice(),
+                            projectDTO.deliveryNote()
+                    );
+                })
+                .collect(Collectors.toList());
     }
+
     @Override
     public ProjectDTO updateProject(Long id, ProjectCreationDTO projectCreationDTO) {
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
-
-        List<Long> validEmployeeIds = projectCreationDTO.employeeIds().stream()
-                .map(idEmployee -> {
-                    try {
-                        employeeClient.getEmployeeById(idEmployee);
-                        return idEmployee;
-                    } catch (Exception e) {
-                        return null;
-                    }
-                })
-                .filter(idEmployee -> idEmployee != null)
-                .collect(Collectors.toList());
-
-        List<Long> invalidEmployeeIds = projectCreationDTO.employeeIds().stream()
-                .filter(idEmployee -> !validEmployeeIds.contains(idEmployee))
-                .toList();
-
-        if (!invalidEmployeeIds.isEmpty()) {
-            throw new RuntimeException("Les employés suivants n'ont pas été trouvés : " + invalidEmployeeIds);
+        Optional<Project> existingProject = projectRepository.findById(id);
+        if (existingProject.isPresent()) {
+            Project project = existingProject.get();
+            projectMapper.updateProjectFromDTO(projectCreationDTO, project);
+            project = projectRepository.save(project);
+            return projectMapper.projectToProjectDTO(project);
+        } else {
+            throw new RuntimeException("Project not found");
         }
-
-        project.setName(projectCreationDTO.name());
-        project.setBudget(projectCreationDTO.budget());
-        project.setOwner(projectCreationDTO.owner());
-        project.setDescription(projectCreationDTO.description());
-        project.setStatus(projectCreationDTO.status());
-        project.setEmployeeIds(validEmployeeIds);
-
-        Project updatedProject = projectRepository.save(project);
-
-        return projectMapper.toDTO(updatedProject);
     }
-
 
     @Override
     public void deleteProject(Long id) {
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
-        projectRepository.delete(project);
+        projectRepository.deleteById(id);
+    }
+
+    public List<EmployeeDTO> getEmployeesForProject(Long projectId) {
+        Optional<Project> project = projectRepository.findById(projectId);
+        if (project.isPresent()) {
+            List<Long> employeeIds = project.get().getEmployeeIds();
+            List<EmployeeDTO> employees = employeeIds.stream()
+                    .map(employeeClient::getEmployeeById)
+                    .collect(Collectors.toList());
+            return employees;
+        } else {
+            throw new RuntimeException("Project not found");
+        }
     }
 }

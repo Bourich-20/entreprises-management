@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface CreditRepository extends JpaRepository<Credit, Long> {
-    List<CreditResponse> findByEmployeeId(Long employeeId);
+    List<Credit> findByEmployeeId(Long employeeId);
 }
